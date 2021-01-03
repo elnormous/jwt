@@ -33,20 +33,33 @@ func Validate(token string, key []byte) bool {
 	parts := strings.Split(token, ".")
 
 	if len(parts) != 3 {
-		return false
-	}
-
-	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte(parts[0] + "." + parts[1]))
-
-	// TODO: check alg and typ
-
-	decodedKey, err := base64.RawURLEncoding.DecodeString(parts[2])
-	if err != nil {
 		return false // TODO: return error
 	}
 
-	return hmac.Equal(mac.Sum(nil), decodedKey)
+	headerData, _ := base64.RawURLEncoding.DecodeString(parts[0]) // TODO: return error
+
+	var h header
+	json.Unmarshal(headerData, &h)
+
+	if h.Typ != "JWT" {
+		return false
+	}
+
+	if h.Alg == "none" {
+		return true
+	} else if h.Alg == "HS256" {
+		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte(parts[0] + "." + parts[1]))
+
+		decodedKey, err := base64.RawURLEncoding.DecodeString(parts[2])
+		if err != nil {
+			return false // TODO: return error
+		}
+
+		return hmac.Equal(mac.Sum(nil), decodedKey)
+	} else {
+		return false // TODO: return error
+	}
 }
 
 func GetPayload(token string) string {
