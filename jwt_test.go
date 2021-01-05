@@ -19,13 +19,13 @@ func TestNewToken(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			result := jwt.NewToken([]byte(testCase.payload), []byte(testCase.key))
+			result, _ := jwt.NewToken([]byte(testCase.payload), []byte(testCase.key))
 
 			if result != testCase.result {
 				t.Errorf("Invalid result, got %s, exptected %s", result, testCase.result)
 			}
 
-			valid := jwt.Validate(result, []byte(testCase.key))
+			valid, _ := jwt.Validate(result, []byte(testCase.key))
 
 			if !valid {
 				t.Errorf("Validation failed")

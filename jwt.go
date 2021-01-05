@@ -5,7 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"strings"
+)
+
+var (
+	ErrInvalidHeader    = errors.New("Invalid header")
+	ErrInvalidToken     = errors.New("Invalid token")
+	ErrInvalidAlgorithm = errors.New("Invalid algorithm")
 )
 
 type header struct {
@@ -13,12 +20,16 @@ type header struct {
 	Typ string `json:"typ"`
 }
 
-func NewToken(payload []byte, key []byte) string {
+func NewToken(payload []byte, key []byte) (string, error) {
 	h := header{
 		"HS256",
 		"JWT",
 	}
-	headerData, _ := json.Marshal(h) // TODO: return error
+	headerData, encodeError := json.Marshal(h)
+	if encodeError != nil {
+		return "", ErrInvalidHeader
+	}
+
 	headerString := base64.RawURLEncoding.EncodeToString(headerData)
 
 	payloadString := base64.RawURLEncoding.EncodeToString(payload)
@@ -26,48 +37,52 @@ func NewToken(payload []byte, key []byte) string {
 	mac := hmac.New(sha256.New, key)
 	mac.Write([]byte(headerString + "." + payloadString))
 
-	return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
 }
 
-func Validate(token string, key []byte) bool {
+func Validate(token string, key []byte) (bool, error) {
 	parts := strings.Split(token, ".")
 
 	if len(parts) != 3 {
-		return false // TODO: return error
+		return false, ErrInvalidToken
 	}
 
-	headerData, _ := base64.RawURLEncoding.DecodeString(parts[0]) // TODO: return error
+	headerData, decodeError := base64.RawURLEncoding.DecodeString(parts[0]) // TODO: return error
+
+	if decodeError != nil {
+		return false, ErrInvalidToken
+	}
 
 	var h header
 	json.Unmarshal(headerData, &h)
 
 	if h.Typ != "JWT" {
-		return false
+		return false, nil
 	}
 
 	if h.Alg == "none" {
-		return true
+		return true, nil
 	} else if h.Alg == "HS256" {
 		mac := hmac.New(sha256.New, key)
 		mac.Write([]byte(parts[0] + "." + parts[1]))
 
-		decodedKey, err := base64.RawURLEncoding.DecodeString(parts[2])
-		if err != nil {
-			return false // TODO: return error
+		decodedKey, keyDecodeError := base64.RawURLEncoding.DecodeString(parts[2])
+		if keyDecodeError != nil {
+			return false, ErrInvalidToken
 		}
 
-		return hmac.Equal(mac.Sum(nil), decodedKey)
+		return hmac.Equal(mac.Sum(nil), decodedKey), nil
 	} else {
-		return false // TODO: return error
+		return false, ErrInvalidAlgorithm
 	}
 }
 
-func GetPayload(token string) string {
+func GetPayload(token string) (string, error) {
 	parts := strings.Split(token, ".")
 
 	if len(parts) != 3 {
-		return "" // TODO: return error
+		return "", ErrInvalidToken
 	}
 
-	return parts[1]
+	return parts[1], nil
 }
