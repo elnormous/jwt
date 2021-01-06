@@ -18,8 +18,10 @@ func TestNewTokenNone(t *testing.T) {
 		{"None token with key value", "{\"a\":\"b\"}", jwt.AlgNone, "", "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhIjoiYiJ9."},
 		{"Empty HS256 token", "{}", jwt.AlgHS256, "test", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.P4Lqll22jQQJ1eMJikvNg5HKG-cKB0hUZA9BZFIG7Jk"},
 		{"HS256 token with key value", "{\"a\":\"b\"}", jwt.AlgHS256, "test", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhIjoiYiJ9.fpozJzV-Il2PfKYRsp9XYnA0MD1iLr5V_Fib0QrugT8"},
-		{"Empty HS256 token", "{}", jwt.AlgHS384, "test", "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.e30.elH0w_ompO-w4utOhVejgCLg1mivQ98I6OqzMST_C_VZvQTljeDS97iTYInn0cGp"},
-		{"HS256 token with key value", "{\"a\":\"b\"}", jwt.AlgHS384, "test", "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJhIjoiYiJ9.swApKsaDxbxx1PyUprRXvQfdKInYNmclSXCIQbR9-R0b4O1Iax_dNzQWmCtXCAuR"},
+		{"Empty HS384 token", "{}", jwt.AlgHS384, "test", "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.e30.elH0w_ompO-w4utOhVejgCLg1mivQ98I6OqzMST_C_VZvQTljeDS97iTYInn0cGp"},
+		{"HS384 token with key value", "{\"a\":\"b\"}", jwt.AlgHS384, "test", "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJhIjoiYiJ9.swApKsaDxbxx1PyUprRXvQfdKInYNmclSXCIQbR9-R0b4O1Iax_dNzQWmCtXCAuR"},
+		{"Empty HS512 token", "{}", jwt.AlgHS512, "test", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.e30.P7FSHtkG8Fi0MItmvmwO5f6ilgnzTHvJp2zr4iiynIyJSwH38a6bEJx7oizjPF5lsIvZd4kn4zoMwhcgqNhz2g"},
+		{"HS512 token with key value", "{\"a\":\"b\"}", jwt.AlgHS512, "test", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhIjoiYiJ9.AIjR460KZUZLePuJpgVkdKV2RNHSNbAeJjLFdOYsI2Ev7VMZgnWAUt4aYA9N5SQVmbqQiWtczmNNUmzkj4kecQ"},
 	}
 
 	for _, testCase := range testCases {
