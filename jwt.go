@@ -15,14 +15,19 @@ var (
 	ErrInvalidAlgorithm = errors.New("Invalid algorithm")
 )
 
+const (
+	AlgNone  = "none"
+	AlgHS256 = "HS256"
+)
+
 type header struct {
 	Alg string `json:"alg"`
 	Typ string `json:"typ"`
 }
 
-func NewToken(payload []byte, key []byte) (string, error) {
+func NewToken(payload []byte, algorithm string, key []byte) (string, error) {
 	h := header{
-		"HS256",
+		algorithm,
 		"JWT",
 	}
 	headerData, encodeError := json.Marshal(h)
@@ -34,10 +39,15 @@ func NewToken(payload []byte, key []byte) (string, error) {
 
 	payloadString := base64.RawURLEncoding.EncodeToString(payload)
 
-	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte(headerString + "." + payloadString))
-
-	return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+	if h.Alg == AlgNone {
+		return headerString + "." + payloadString + ".", nil
+	} else if h.Alg == AlgHS256 {
+		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte(headerString + "." + payloadString))
+		return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+	} else {
+		return "", ErrInvalidAlgorithm
+	}
 }
 
 func Validate(token string, key []byte) (bool, error) {
@@ -60,9 +70,9 @@ func Validate(token string, key []byte) (bool, error) {
 		return false, nil
 	}
 
-	if h.Alg == "none" {
+	if h.Alg == AlgNone {
 		return true, nil
-	} else if h.Alg == "HS256" {
+	} else if h.Alg == AlgHS256 {
 		mac := hmac.New(sha256.New, key)
 		mac.Write([]byte(parts[0] + "." + parts[1]))
 
@@ -84,5 +94,10 @@ func GetPayload(token string) (string, error) {
 		return "", ErrInvalidToken
 	}
 
-	return parts[1], nil
+	decodedPayload, payloadDecodeError := base64.RawURLEncoding.DecodeString(parts[1])
+	if payloadDecodeError != nil {
+		return "", ErrInvalidToken
+	}
+
+	return string(decodedPayload), nil
 }
