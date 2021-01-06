@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,7 @@ var (
 const (
 	AlgNone  = "none"
 	AlgHS256 = "HS256"
+	AlgHS384 = "HS384"
 )
 
 type header struct {
@@ -43,6 +45,10 @@ func NewToken(payload []byte, algorithm string, key []byte) (string, error) {
 		return headerString + "." + payloadString + ".", nil
 	} else if h.Alg == AlgHS256 {
 		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte(headerString + "." + payloadString))
+		return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+	} else if h.Alg == AlgHS384 {
+		mac := hmac.New(sha512.New384, key)
 		mac.Write([]byte(headerString + "." + payloadString))
 		return headerString + "." + payloadString + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
 	} else {
@@ -72,18 +78,23 @@ func Validate(token string, key []byte) (bool, error) {
 
 	if h.Alg == AlgNone {
 		return true, nil
-	} else if h.Alg == AlgHS256 {
-		mac := hmac.New(sha256.New, key)
-		mac.Write([]byte(parts[0] + "." + parts[1]))
-
+	} else {
 		decodedKey, keyDecodeError := base64.RawURLEncoding.DecodeString(parts[2])
 		if keyDecodeError != nil {
 			return false, ErrInvalidToken
 		}
 
-		return hmac.Equal(mac.Sum(nil), decodedKey), nil
-	} else {
-		return false, ErrInvalidAlgorithm
+		if h.Alg == AlgHS256 {
+			mac := hmac.New(sha256.New, key)
+			mac.Write([]byte(parts[0] + "." + parts[1]))
+			return hmac.Equal(mac.Sum(nil), decodedKey), nil
+		} else if h.Alg == AlgHS384 {
+			mac := hmac.New(sha512.New384, key)
+			mac.Write([]byte(parts[0] + "." + parts[1]))
+			return hmac.Equal(mac.Sum(nil), decodedKey), nil
+		} else {
+			return false, ErrInvalidAlgorithm
+		}
 	}
 }
 
