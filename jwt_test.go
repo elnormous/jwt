@@ -6,7 +6,7 @@ import (
 	"github.com/elnormous/jwt"
 )
 
-func TestNewTokenNone(t *testing.T) {
+func TestNewToken(t *testing.T) {
 	testCases := []struct {
 		name      string
 		payload   string
@@ -26,21 +26,33 @@ func TestNewTokenNone(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			result, _ := jwt.NewToken([]byte(testCase.payload), testCase.algorithm, []byte(testCase.key))
+			result, newTokenError := jwt.NewToken([]byte(testCase.payload), testCase.algorithm, []byte(testCase.key))
+
+			if newTokenError != nil {
+				t.Errorf("Unexpected error: %s", newTokenError.Error())
+			}
 
 			if result != testCase.result {
 				t.Errorf("Invalid result, got %s, exptected %s", result, testCase.result)
 			}
 
-			valid, _ := jwt.Validate(result, []byte(testCase.key))
+			valid, validateError := jwt.Validate(result, []byte(testCase.key))
+
+			if validateError != nil {
+				t.Errorf("Unexpected error: %s", validateError.Error())
+			}
 
 			if !valid {
 				t.Errorf("Validation failed")
 			}
 
-			payload, _ := jwt.GetPayload(result)
+			payload, getPayloadError := jwt.GetPayload(result)
 			if payload != testCase.payload {
 				t.Errorf("Invalid payload, got %s, expected %s", payload, testCase.payload)
+			}
+
+			if getPayloadError != nil {
+				t.Errorf("Unexpected error: %s", getPayloadError.Error())
 			}
 		})
 	}
