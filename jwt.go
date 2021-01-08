@@ -14,6 +14,7 @@ var (
 	ErrInvalidHeader    = errors.New("Invalid header")
 	ErrInvalidToken     = errors.New("Invalid token")
 	ErrInvalidAlgorithm = errors.New("Invalid algorithm")
+	ErrInvalidSignature = errors.New("Invalid signature")
 )
 
 const (
@@ -62,56 +63,64 @@ func NewToken(payload []byte, algorithm string, key []byte) (string, error) {
 }
 
 func Validate(token string, key []byte) (bool, error) {
+	_, err := GetPayload(token, key)
+
+	if err == nil {
+		return true, nil
+	} else if err == ErrInvalidSignature {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
+func GetPayload(token string, key []byte) (string, error) {
 	parts := strings.Split(token, ".")
 
 	if len(parts) != 3 {
-		return false, ErrInvalidToken
+		return "", ErrInvalidToken
 	}
 
 	headerData, decodeError := base64.RawURLEncoding.DecodeString(parts[0])
 
 	if decodeError != nil {
-		return false, ErrInvalidToken
+		return "", ErrInvalidToken
 	}
 
 	var h header
 	json.Unmarshal(headerData, &h)
 
 	if h.Typ != "JWT" {
-		return false, nil
+		return "", ErrInvalidToken
 	}
 
-	if h.Alg == AlgNone {
-		return true, nil
-	} else {
+	if h.Alg != AlgNone {
 		signature, signatureError := base64.RawURLEncoding.DecodeString(parts[2])
 		if signatureError != nil {
-			return false, ErrInvalidToken
+			return "", ErrInvalidToken
 		}
 
 		if h.Alg == AlgHS256 {
 			mac := hmac.New(sha256.New, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), signature), nil
+			if !hmac.Equal(mac.Sum(nil), signature) {
+				return "", ErrInvalidSignature
+			}
 		} else if h.Alg == AlgHS384 {
 			mac := hmac.New(sha512.New384, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), signature), nil
+			if !hmac.Equal(mac.Sum(nil), signature) {
+				return "", ErrInvalidSignature
+			}
 		} else if h.Alg == AlgHS512 {
 			mac := hmac.New(sha512.New, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), signature), nil
+			if !hmac.Equal(mac.Sum(nil), signature) {
+				return "", ErrInvalidSignature
+			}
 		} else {
-			return false, ErrInvalidAlgorithm
+			return "", ErrInvalidAlgorithm
 		}
-	}
-}
-
-func GetPayload(token string) (string, error) {
-	parts := strings.Split(token, ".")
-
-	if len(parts) != 3 {
-		return "", ErrInvalidToken
 	}
 
 	decodedPayload, payloadDecodeError := base64.RawURLEncoding.DecodeString(parts[1])

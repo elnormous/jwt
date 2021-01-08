@@ -1,6 +1,7 @@
 package jwt_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/elnormous/jwt"
@@ -46,13 +47,37 @@ func TestNewToken(t *testing.T) {
 				t.Errorf("Validation failed")
 			}
 
-			payload, getPayloadError := jwt.GetPayload(result)
+			payload, getPayloadError := jwt.GetPayload(result, []byte(testCase.key))
 			if payload != testCase.payload {
 				t.Errorf("Invalid payload, got %s, expected %s", payload, testCase.payload)
 			}
 
 			if getPayloadError != nil {
 				t.Errorf("Unexpected error: %s", getPayloadError.Error())
+			}
+		})
+	}
+}
+
+func TestGetPayloadErrors(t *testing.T) {
+	testCases := []struct {
+		name  string
+		token string
+		key   string
+		err   error
+	}{
+		{"Missing payload", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.", "test", jwt.ErrInvalidToken},
+		{"Missing signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.", "test", jwt.ErrInvalidSignature},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := jwt.GetPayload(testCase.token, []byte(testCase.key))
+
+			if err == nil {
+				t.Errorf("Expected an error for %s", testCase.token)
+			} else if !errors.Is(err, testCase.err) {
+				t.Errorf("Unexpected error \"%s\", expected \"%s\" for %s", err.Error(), testCase.err.Error(), testCase.token)
 			}
 		})
 	}
