@@ -68,7 +68,7 @@ func Validate(token string, key []byte) (bool, error) {
 		return false, ErrInvalidToken
 	}
 
-	headerData, decodeError := base64.RawURLEncoding.DecodeString(parts[0]) // TODO: return error
+	headerData, decodeError := base64.RawURLEncoding.DecodeString(parts[0])
 
 	if decodeError != nil {
 		return false, ErrInvalidToken
@@ -84,23 +84,23 @@ func Validate(token string, key []byte) (bool, error) {
 	if h.Alg == AlgNone {
 		return true, nil
 	} else {
-		decodedKey, keyDecodeError := base64.RawURLEncoding.DecodeString(parts[2])
-		if keyDecodeError != nil {
+		signature, signatureError := base64.RawURLEncoding.DecodeString(parts[2])
+		if signatureError != nil {
 			return false, ErrInvalidToken
 		}
 
 		if h.Alg == AlgHS256 {
 			mac := hmac.New(sha256.New, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), decodedKey), nil
+			return hmac.Equal(mac.Sum(nil), signature), nil
 		} else if h.Alg == AlgHS384 {
 			mac := hmac.New(sha512.New384, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), decodedKey), nil
+			return hmac.Equal(mac.Sum(nil), signature), nil
 		} else if h.Alg == AlgHS512 {
 			mac := hmac.New(sha512.New, key)
 			mac.Write([]byte(parts[0] + "." + parts[1]))
-			return hmac.Equal(mac.Sum(nil), decodedKey), nil
+			return hmac.Equal(mac.Sum(nil), signature), nil
 		} else {
 			return false, ErrInvalidAlgorithm
 		}
