@@ -69,7 +69,7 @@ func TestGetPayloadErrors(t *testing.T) {
 		{"Missing payload", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.", "test", jwt.ErrInvalidToken},
 		{"Invalid header", "xxx.e30.", "test", jwt.ErrInvalidToken},
 		{"Missing signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.", "test", jwt.ErrInvalidSignature},
-		{"Invalid signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.abc", "test", jwt.ErrInvalidSignature},
+		{"Invalid signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.=abc", "test", jwt.ErrInvalidToken},
 		{"Wrong signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.P4Lqll22jQQJ1eMJikvNg5HKG-cKB0hUZA9BZFIG7Jk", "1234", jwt.ErrInvalidSignature},
 	}
 
